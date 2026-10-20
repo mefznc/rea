@@ -13,8 +13,6 @@ const EXECUTION_WORDING =
   /\b(?:run|runs|running|launch|launches|launching|execute|executes|executing|execution|start|starts|install|installs|uninstall|uninstalls)\b/iu;
 
 const EXECUTION_WORDING_EXCEPTIONS: Readonly<Record<string, string>> = {
-  start_frida_session:
-    "spawned targets remain suspended until resume_frida_session",
   inspect_native_load_image: "states that it does not execute the target",
   resolve_native_call_targets: "states that it does not execute code",
   inspect_pe_resources: "states that it does not execute the image",
@@ -125,6 +123,7 @@ describe("tool effects", () => {
       "capture_electron_scenario",
       "capture_native_ui_scenario",
       "capture_process_scenario",
+      "close_frida_session",
       "install_adb_package",
       "instrument_with_frida",
       "load_frida_script",
@@ -133,8 +132,10 @@ describe("tool effects", () => {
       "resume_frida_session",
       "start_adb_activity",
       "start_adb_app",
+      "start_frida_session",
       "stop_adb_app",
       "uninstall_adb_package",
+      "unload_frida_script",
     ]);
     for (const contract of destructive)
       expect(contract.annotations, contract.name).toMatchObject({

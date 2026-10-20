@@ -168,3 +168,18 @@ describe("Frida tool contracts", () => {
     expect(isValidFridaRemoteAddress("user@frida-target")).toBe(false);
   });
 });
+
+it.each(["start_frida_session", "close_frida_session", "unload_frida_script"])(
+  "declares execution authority for %s cleanup",
+  (name) => {
+    const contract = TOOL_CONTRACTS.find(
+      (candidate) => candidate.name === name,
+    );
+    expect(contract?.effects.executesForeignCode).toBe(true);
+    expect(contract?.annotations).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+    });
+  },
+);

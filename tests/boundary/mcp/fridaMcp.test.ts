@@ -84,6 +84,21 @@ const createFridaTestProvider = (
 });
 
 const expectFridaToolsAvailable = async (client: Client) => {
+  const tools = (await client.listTools()).tools;
+  for (const name of [
+    "start_frida_session",
+    "close_frida_session",
+    "unload_frida_script",
+  ]) {
+    expect(
+      tools.find((tool) => tool.name === name)?.annotations,
+      name,
+    ).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+    });
+  }
   const inventory = await client.callTool({
     name: "binary_session",
     arguments: {},

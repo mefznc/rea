@@ -133,6 +133,7 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
     mutatesSession: true,
     launchesProcess: true,
     accessesNetwork: true,
+    executesForeignCode: true,
     idempotent: false,
   }),
   load_frida_script: effects({
@@ -156,6 +157,7 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
     mutatesSession: true,
     launchesProcess: true,
     accessesNetwork: true,
+    executesForeignCode: true,
     idempotent: false,
   }),
   frida_session_status: effects(),
@@ -164,6 +166,7 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
     mutatesSession: true,
     launchesProcess: true,
     accessesNetwork: true,
+    executesForeignCode: true,
     idempotent: false,
   }),
   instrument_with_frida: effects({

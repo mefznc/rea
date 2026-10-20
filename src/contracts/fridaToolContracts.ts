@@ -116,7 +116,7 @@ export const FRIDA_TOOL_CONTRACTS = [
     ...toolContractMetadata("start_frida_session"),
     kind: "native-provider",
     description:
-      "Attach Frida to one selected process or spawn one selected target. Spawned targets remain paused until resume_frida_session, allowing scripts to load before execution. Closing a session detaches instrumentation; it does not kill the target.",
+      "Attach Frida to one selected process or spawn one selected target. A successful spawn starts paused so scripts can load before resume_frida_session. Failed or cancelled startup, close, and shutdown cleanup may resume spawned targets, including on later retries. REA never kills the target; after failed startup its state is unknown.",
     inputSchema: z
       .strictObject({
         mode: z.enum(["attach", "spawn"]),
@@ -200,7 +200,7 @@ export const FRIDA_TOOL_CONTRACTS = [
     ...toolContractMetadata("unload_frida_script"),
     kind: "native-provider",
     description:
-      "Unload one caller-selected Frida script from a live session. This removes that script's instrumentation from the target.",
+      "Unload one caller-selected Frida script from a live session. This removes that script's instrumentation from the target and may execute its cleanup callbacks inside the target.",
     inputSchema: z.strictObject({
       session_id: sessionId,
       script_id: z.string().uuid(),
@@ -250,7 +250,7 @@ export const FRIDA_TOOL_CONTRACTS = [
     ...toolContractMetadata("close_frida_session"),
     kind: "native-provider",
     description:
-      "Unload session scripts and detach REA's Frida session. If a spawned process is still paused, resume it before detaching so it is not left suspended. REA never kills the target; its final state is reported as unknown.",
+      "Unload session scripts and attempt to detach REA's Frida session, then resume a paused spawn only when script cleanup or detach has released its instrumentation. Incomplete cleanup is retained for retry, which may resume the target later. REA never kills the target; its final state is reported as unknown.",
     inputSchema: z.strictObject({ session_id: sessionId }),
     outputSchema: z.strictObject({ target_state: z.literal("unknown") }),
     examples: [

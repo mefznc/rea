@@ -202,6 +202,30 @@ const startLocalAttachedSession = async (
 
 // eslint-disable-next-line max-lines-per-function -- related manager lifecycle cases share the same focused fake provider.
 describe("FridaInstrumentationManager", () => {
+  it.each(["attach", "spawn"] as const)(
+    "cleans up a failed %s without assuming the target stays paused",
+    async (mode) => {
+      const bindings = new FakeDeviceManager();
+      bindings.device.attach = async () => {
+        throw new Error("attach failed");
+      };
+      const manager = new FridaInstrumentationManager({
+        deviceManager: bindings,
+      });
+      const started = await manager.startSession(
+        mode === "spawn"
+          ? { mode, deviceId: "local", program: "/tmp/fixture" }
+          : { mode, deviceId: "local", pid: 512 },
+      );
+      if (started.ok) throw new Error("Attach unexpectedly succeeded");
+      expect(started.error.message).toContain("attach failed");
+      expect(started.error.cleanupIncomplete).not.toBe(true);
+      expect(bindings.device.resumed).toEqual(mode === "spawn" ? [512] : []);
+      await manager.closeAll();
+      expect(bindings.device.resumed).toEqual(mode === "spawn" ? [512] : []);
+    },
+  );
+
   it("retains a failed startup's spawn and remote lease until cleanup succeeds", async () => {
     const bindings = new FakeDeviceManager();
     bindings.device.attach = async () => {
@@ -425,7 +449,7 @@ describe("FridaInstrumentationManager", () => {
     expect(failure).not.toContain(certificate);
   });
 
-  it("unloads scripts, resumes a paused spawn, and detaches without killing it", async () => {
+  it("unloads scripts and attempts detach before resuming a paused spawn", async () => {
     const bindings = new FakeDeviceManager();
     const manager = new FridaInstrumentationManager({
       deviceManager: bindings,
@@ -442,8 +466,16 @@ describe("FridaInstrumentationManager", () => {
       source: "send('ready');",
     });
     expect(loaded.ok).toBe(true);
+    const detachedAtResume: boolean[] = [];
+    const resume = bindings.device.resume.bind(bindings.device);
+    bindings.device.resume = async (pid) => {
+      detachedAtResume.push(bindings.device.session.isDetached());
+      expect(bindings.device.session.scripts[0]?.isDestroyed).toBe(true);
+      await resume(pid);
+    };
     const closed = await manager.closeSession(started.value.sessionId);
     expect(closed.ok).toBe(true);
+    expect(detachedAtResume).toEqual([true]);
     expect(bindings.device.session.scripts[0]?.isDestroyed).toBe(true);
     expect(bindings.device.resumed).toEqual([512]);
     expect(bindings.device.session.isDetached()).toBe(true);
